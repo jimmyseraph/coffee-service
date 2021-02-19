@@ -1,0 +1,184 @@
+pipeline {
+    agent none
+
+    stages {
+        // pull code from gitlab
+        stage("Pull Code") {
+            agent any
+            steps {
+                git branch: env.gitlabSourceBranch, credentialsId: 'gitlab-ssh', url: 'git@gitlab.testops.vip:TestOps/betacoffee/coffee-service.git'
+            }
+        }
+
+        // config-module ci steps
+        stage("Config Service Stage"){
+            agent none
+            post {
+                failure {
+                    updateGitlabCommitStatus name: 'config stage', state: 'failed'
+                }
+                success {
+                    updateGitlabCommitStatus name: 'config stage', state: 'success'
+                }
+                aborted {
+                    updateGitlabCommitStatus name: 'config stage', state: 'canceled'
+                }
+            }
+            when {
+                changeset 'config/**/*.java'
+            }
+
+            stages {
+                stage("Unit Test for Config Module") {
+                    agent {
+                        docker {
+                            image 'maven:3.6-jdk-14'
+                            args '-v /root/.m2:/root/.m2'
+                        }
+                    }
+                    steps {
+                        updateGitlabCommitStatus name: 'config stage', state: 'running'
+                        sh 'cd config; mvn --settings ../setting/settings.xml clean test'
+                    }
+                }
+            }
+        }
+
+        // discovery-module ci steps
+        stage("Discovery Service Stage"){
+            agent none
+            post {
+                failure {
+                    updateGitlabCommitStatus name: 'discovery stage', state: 'failed'
+                }
+                success {
+                    updateGitlabCommitStatus name: 'discovery stage', state: 'success'
+                }
+                aborted {
+                    updateGitlabCommitStatus name: 'discovery stage', state: 'canceled'
+                }
+            }
+            when {
+                changeset 'discovery/**/*.java'
+            }
+
+            stages {
+                stage("Unit Test for Discovery Module") {
+                    agent {
+                        docker {
+                            image 'maven:3.6-jdk-14'
+                            args '-v /root/.m2:/root/.m2'
+                        }
+                    }
+                    steps {
+                        updateGitlabCommitStatus name: 'discovery stage', state: 'running'
+                        sh 'cd discovery; mvn --settings ../setting/settings.xml clean test'
+                    }
+                }
+            }
+        }
+
+         // gateway-module ci steps
+         stage("Gateway Service Stage"){
+             agent none
+             post {
+                 failure {
+                     updateGitlabCommitStatus name: 'gateway stage', state: 'failed'
+                 }
+                 success {
+                     updateGitlabCommitStatus name: 'gateway stage', state: 'success'
+                 }
+                 aborted {
+                     updateGitlabCommitStatus name: 'gateway stage', state: 'canceled'
+                 }
+             }
+             when {
+                 changeset 'gateway/**/*.java'
+             }
+
+             stages {
+                 stage("Unit Test for Gateway Module") {
+                     agent {
+                         docker {
+                             image 'maven:3.6-jdk-14'
+                             args '-v /root/.m2:/root/.m2'
+                         }
+                     }
+                     steps {
+                         updateGitlabCommitStatus name: 'gateway stage', state: 'running'
+                         sh 'cd gateway; mvn --settings ../setting/settings.xml clean test'
+                     }
+                 }
+             }
+         }
+
+         // account-module ci steps
+         stage("Account Service Stage"){
+             agent none
+             post {
+                 failure {
+                     updateGitlabCommitStatus name: 'account stage', state: 'failed'
+                 }
+                 success {
+                     updateGitlabCommitStatus name: 'account stage', state: 'success'
+                 }
+                 aborted {
+                     updateGitlabCommitStatus name: 'account stage', state: 'canceled'
+                 }
+             }
+             when {
+                 changeset 'account/**/*.java'
+             }
+
+             stages {
+                 stage("Unit Test for Account Module") {
+                     agent {
+                         docker {
+                             image 'maven:3.6-jdk-14'
+                             args '-v /root/.m2:/root/.m2'
+                         }
+                     }
+                     steps {
+                         updateGitlabCommitStatus name: 'account stage', state: 'running'
+                         sh 'cd account; mvn --settings ../setting/settings.xml clean test'
+                     }
+                 }
+             }
+         }
+
+         // order-module ci steps
+         stage("Order Service Stage"){
+             agent none
+             post {
+                 failure {
+                     updateGitlabCommitStatus name: 'order stage', state: 'failed'
+                 }
+                 success {
+                     updateGitlabCommitStatus name: 'order stage', state: 'success'
+                 }
+                 aborted {
+                     updateGitlabCommitStatus name: 'order stage', state: 'canceled'
+                 }
+             }
+             when {
+                 changeset 'order/**/*.java'
+             }
+
+             stages {
+                 stage("Unit Test for Order Module") {
+                     agent {
+                         docker {
+                             image 'maven:3.6-jdk-14'
+                             args '-v /root/.m2:/root/.m2'
+                         }
+                     }
+                     steps {
+                         updateGitlabCommitStatus name: 'order stage', state: 'running'
+                         sh 'cd order; mvn --settings ../setting/settings.xml clean test'
+                     }
+                 }
+             }
+         }
+
+    }
+}

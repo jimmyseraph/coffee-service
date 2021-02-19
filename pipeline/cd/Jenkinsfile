@@ -1,0 +1,237 @@
+pipeline {
+    agent none
+
+    stages {
+        // pull code from gitlab
+        stage("Pull Code") {
+            agent any
+            steps {
+                git branch: env.gitlabSourceBranch, credentialsId: 'gitlab-ssh', url: 'git@gitlab.testops.vip:TestOps/betacoffee/coffee-service.git'
+            }
+        }
+        // config-module CD steps
+        stage("Config Service CD Stage"){
+            agent none
+            post {
+                failure {
+                    updateGitlabCommitStatus name: 'config CD stage', state: 'failed'
+                }
+                success {
+                    updateGitlabCommitStatus name: 'config CD stage', state: 'success'
+                }
+                aborted {
+                    updateGitlabCommitStatus name: 'config CD stage', state: 'canceled'
+                }
+            }
+            when {
+                changeset 'config/**/*.java'
+            }
+            stages {
+                stage("Build Config"){
+                    agent {
+                        docker {
+                            image 'maven:3.6-jdk-14'
+                            args '-v /root/.m2:/root/.m2'
+                        }
+                    }
+                    steps {
+                        updateGitlabCommitStatus name: 'config CD stage', state: 'running'
+                        sh 'cd config; mvn --settings ../setting/settings.xml clean package -Dmaven.test.skip=true'
+                        sh 'cd config/target; mv config*.jar config.jar'
+                    }
+                }
+                stage("Make Config Image") {
+                    agent any
+                    steps{
+                        sh 'mv config/target/config.jar docker/config/'
+                        sh 'cd docker/config; docker build -t docker.testops.vip:5000/beta-coffee-config:test .'
+                        echo 'build image success'
+                        sh 'docker push docker.testops.vip:5000/beta-coffee-config:test'
+                        echo 'push image success, delete temporary image in local'
+                        sh 'docker rmi docker.testops.vip:5000/beta-coffee-config:test'
+                    }
+                }
+            }
+        }
+
+        // discovery-module CD steps
+        stage("Discovery Service CD Stage"){
+            agent none
+            post {
+                failure {
+                    updateGitlabCommitStatus name: 'discovery CD stage', state: 'failed'
+                }
+                success {
+                    updateGitlabCommitStatus name: 'discovery CD stage', state: 'success'
+                }
+                aborted {
+                    updateGitlabCommitStatus name: 'discovery CD stage', state: 'canceled'
+                }
+            }
+            when {
+                changeset 'discovery/**/*.java'
+            }
+            stages {
+                stage("Build Discovery"){
+                    agent {
+                        docker {
+                            image 'maven:3.6-jdk-14'
+                            args '-v /root/.m2:/root/.m2'
+                        }
+                    }
+                    steps {
+                        updateGitlabCommitStatus name: 'discovery CD stage', state: 'running'
+                        sh 'cd discovery; mvn --settings ../setting/settings.xml clean package -Dmaven.test.skip=true'
+                        sh 'cd discovery/target; mv discovery*.jar discovery.jar'
+                    }
+                }
+                stage("Make Discovery Image") {
+                    agent any
+                    steps{
+                        sh 'mv discovery/target/discovery.jar docker/discovery/'
+                        sh 'cd docker/discovery; docker build -t docker.testops.vip:5000/beta-coffee-discovery:test .'
+                        echo 'build image success'
+                        sh 'docker push docker.testops.vip:5000/beta-coffee-discovery:test'
+                        echo 'push image success, delete temporary image in local'
+                        sh 'docker rmi docker.testops.vip:5000/beta-coffee-discovery:test'
+                    }
+                }
+            }
+        }
+
+        // gateway-module CD steps
+        stage("Gateway Service CD Stage"){
+            agent none
+            post {
+                failure {
+                    updateGitlabCommitStatus name: 'gateway CD stage', state: 'failed'
+                }
+                success {
+                    updateGitlabCommitStatus name: 'gateway CD stage', state: 'success'
+                }
+                aborted {
+                    updateGitlabCommitStatus name: 'gateway CD stage', state: 'canceled'
+                }
+            }
+            when {
+                changeset 'gateway/**/*.java'
+            }
+            stages {
+                stage("Build Gateway"){
+                    agent {
+                        docker {
+                            image 'maven:3.6-jdk-14'
+                            args '-v /root/.m2:/root/.m2'
+                        }
+                    }
+                    steps {
+                        updateGitlabCommitStatus name: 'gateway CD stage', state: 'running'
+                        sh 'cd gateway; mvn --settings ../setting/settings.xml clean package -Dmaven.test.skip=true'
+                        sh 'cd gateway/target; mv gateway*.jar gateway.jar'
+                    }
+                }
+                stage("Make Gateway Image") {
+                    agent any
+                    steps{
+                        sh 'mv gateway/target/gateway.jar docker/gateway/'
+                        sh 'cd docker/gateway; docker build -t docker.testops.vip:5000/beta-coffee-gateway:test .'
+                        echo 'build image success'
+                        sh 'docker push docker.testops.vip:5000/beta-coffee-gateway:test'
+                        echo 'push image success, delete temporary image in local'
+                        sh 'docker rmi docker.testops.vip:5000/beta-coffee-gateway:test'
+                    }
+                }
+            }
+        }
+
+        // account-module CD steps
+        stage("Account Service CD Stage"){
+            agent none
+            post {
+                failure {
+                    updateGitlabCommitStatus name: 'account CD stage', state: 'failed'
+                }
+                success {
+                    updateGitlabCommitStatus name: 'account CD stage', state: 'success'
+                }
+                aborted {
+                    updateGitlabCommitStatus name: 'account CD stage', state: 'canceled'
+                }
+            }
+            when {
+                changeset 'account/**/*.java'
+            }
+            stages {
+                stage("Build Account"){
+                    agent {
+                        docker {
+                            image 'maven:3.6-jdk-14'
+                            args '-v /root/.m2:/root/.m2'
+                        }
+                    }
+                    steps {
+                        updateGitlabCommitStatus name: 'account CD stage', state: 'running'
+                        sh 'cd account; mvn --settings ../setting/settings.xml clean package -Dmaven.test.skip=true'
+                        sh 'cd account/target; mv account*.jar account.jar'
+                    }
+                }
+                stage("Make Account Image") {
+                    agent any
+                    steps{
+                        sh 'mv account/target/account.jar docker/account/'
+                        sh 'cd docker/account; docker build -t docker.testops.vip:5000/beta-coffee-account:test .'
+                        echo 'build image success'
+                        sh 'docker push docker.testops.vip:5000/beta-coffee-account:test'
+                        echo 'push image success, delete temporary image in local'
+                        sh 'docker rmi docker.testops.vip:5000/beta-coffee-account:test'
+                    }
+                }
+            }
+        }
+
+        // order-module CD steps
+        stage("Order Service CD Stage"){
+            agent none
+            post {
+                failure {
+                    updateGitlabCommitStatus name: 'order CD stage', state: 'failed'
+                }
+                success {
+                    updateGitlabCommitStatus name: 'order CD stage', state: 'success'
+                }
+                aborted {
+                    updateGitlabCommitStatus name: 'order CD stage', state: 'canceled'
+                }
+            }
+            when {
+                changeset 'order/**/*.java'
+            }
+            stages {
+                stage("Build Order"){
+                    agent {
+                        docker {
+                            image 'maven:3.6-jdk-14'
+                            args '-v /root/.m2:/root/.m2'
+                        }
+                    }
+                    steps {
+                        updateGitlabCommitStatus name: 'order CD stage', state: 'running'
+                        sh 'cd order; mvn --settings ../setting/settings.xml clean package -Dmaven.test.skip=true'
+                        sh 'cd order/target; mv order*.jar order.jar'
+                    }
+                }
+                stage("Make Order Image") {
+                    agent any
+                    steps{
+                        sh 'mv order/target/order.jar docker/order/'
+                        sh 'cd docker/order; docker build -t docker.testops.vip:5000/beta-coffee-order:test .'
+                        echo 'build image success'
+                        sh 'docker push docker.testops.vip:5000/beta-coffee-order:test'
+                        echo 'push image success, delete temporary image in local'
+                        sh 'docker rmi docker.testops.vip:5000/beta-coffee-order:test'
+                    }
+                }
+            }
+        }
+    }
+}

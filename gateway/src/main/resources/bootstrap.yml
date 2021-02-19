@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: gateway
+  cloud:
+    config:
+      uri: http://127.0.0.1:10001
+      fail-fast: true
+      username: liudao
+      password: 123456
+      profile: local
+      label: master
